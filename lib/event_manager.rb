@@ -26,6 +26,14 @@ def clean_phone_number(phone)
   end
 end
 
+def get_hour(reg_date)
+  Time.parse(reg_date.split(" ")[1]).hour
+end
+
+def get_day(reg_date)
+  Date.strptime(reg_date.split(" ")[0], "%m/%d/%Y").wday
+end
+
 def legislators_by_zipcode(zip)
   civic_info = Google::Apis::CivicinfoV2::CivicInfoService.new
   # removing public civic info key
@@ -72,19 +80,27 @@ contents = CSV.open(
 template_letter = File.read('form_letter.erb')
 erb_template = ERB.new template_letter
 
+registration_hours = {}
+registration_days = {}
+
 contents.each do |row|
   id = row[0]
   name = row[:first_name]
   zipcode = clean_zipcode(row[:zipcode])
   legislators = legislators_by_zipcode(zipcode)
 
-  form_letter = erb_template.result(binding)
-
-  save_thank_you_letter(id,form_letter)
-end
-
-contents.each do |row|
-  id = row[0]
-  name = row[:first_name]
   phone_number = clean_phone_number(row[:homephone])
+
+  hour = get_hour(row[:regdate])
+  day = get_day(row[:regdate])
+
+  registration_hours[hour] ? registration_hours[hour] += 1 : registration_hours[hour] = 1
+  registration_days[day] ? registration_days[day] += 1 : registration_days[day] = 1
+
+  #form_letter = erb_template.result(binding)
+
+  #save_thank_you_letter(id,form_letter)
 end
+
+puts registration_hours
+puts registration_days
